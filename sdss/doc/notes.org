@@ -1,0 +1,11 @@
+* SDSS notes
+
+** Misc
+   
+   SPEC_CLN is a kind of classification of objects, such as star or galaxy.
+
+   The Rerun parameter indicates different runs. Smallest number are used.
+
+   Bad pixel mask are contained in the original spSpec* file. Get the
+   original data from http://das.sdss.org/www/html/post_fibers.html.
+

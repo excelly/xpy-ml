@@ -1,0 +1,69 @@
+* OSIM Simulator 
+
+** Conditions
+
+Conditions are affected by prevalence, age, gender, race, *confounder,
+drug, indication*.
+
+Conditions recorded in the *VALID_ALL* file consider only the
+background rate and the preventative effects of drugs/indications.
+
+The effect of distrubtions of type "cat" and "cont" depends on a BPCol
+(BasePrevalence) distribution if the *xBP* attributes of the
+distribution is "y".
+
+The effect of drug is accumulated to the baseline prevalence
+multiplicatively like Risk=BP*(1 + DrugRisk).
+
+The sources of conditions are now identified from the simulator with:
+0: Background
+1: Indication
+2: Drug outcome
+3: Indication outcome
+
+*** Generate outcome conditions
+
+Probability is affected by baseline prevalence, drugs, indications.
+Additively combined.
+
+(person, drug exposure, outcome) -> probability based on
+drug, indication, baseline -> has the condition? -> details (onset
+date, etc) -> record? (observed? etc)
+
+Indications are recorded as conditions in CONDITION_OCCURRENCE file.
+
+*** Generate background conditions
+
+Drugs may have preventative effects for conditions.
+
+(person, condition) -> probability based on prevalence, age,
+confounder, etc. -> occur? -> details (number of occurrences, date) ->
+record? (observed? etc)
+
+** Drugs
+
+Drugs are affected by prevalence, age, gender, race, 
+
+Drugs has correponding indications. Therefore there are clusters.
+
+*** Generate Drug Exposures
+
+To determine which durgs get added to a person, the simulator examines
+every drug for each person and assigns a probablity of recording that
+drug based on the attriubtes of the drug and the person. 
+
+(person, drug) -> has the drug? -> details (number of exposures,
+length, etc) -> record? (observed? etc)
+
+Indication for this exposure instance is also generated. Indications
+plays similar role as drugs.
+
+** Person
+
+Each person has only one observation period. Only the events that
+occur during the observation period may be recorded into the database.
+
+** Notes
+
+The generations of outcome and background conditions are independent.
+

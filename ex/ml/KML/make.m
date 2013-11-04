@@ -1,0 +1,2 @@
+mex kml.cpp KM_ANN.cpp KMeans.cpp KMterm.cpp KMrand.cpp KCutil.cpp KCtree.cpp KMdata.cpp KMcenters.cpp KMfilterCenters.cpp KMlocal.cpp
+% mex -g kml.cpp KM_ANN.cpp KMeans.cpp KMterm.cpp KMrand.cpp KCutil.cpp KCtree.cpp KMdata.cpp KMcenters.cpp KMfilterCenters.cpp KMlocal.cpp

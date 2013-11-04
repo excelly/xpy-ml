@@ -1,0 +1,112 @@
+* Anomalous Cluster Detection by Histograms
+
+All of these algorithms are implemented in Python with Numpy.
+
+** Get the data
+
+We retrieve the galaxy data from SDSS data release 7. There are 807118
+stars in total. MapReduce applied.
+   
+** Filter the data
+
+We drop from the sample galaxies that:
+
+**** has 20% bad pixels.
+**** has really large spikes (> 1e4 or < -1e2).
+**** has bad Z status.
+**** has low SNR (<3).
+**** saturated the sensor (MAG < 15).
+
+After this filtering 651473 galaxies remain in the sample. MapReduce
+applied.
+
+** Quantization
+
+As the first step, a distributed PCA is applied to the galaxy spectra
+to reduce the dimensionality. 20 out of 500 principle components are
+retained in the reduced data so as to keep 99.5% of the total
+variance. MapReduce applied.
+
+Having this reduced features, a fast Kmeans variate BIRTH
+(http://www.cs.uvm.edu/~xwu/kdd/Birch-09.ppt) is applied to obtain a
+codebook. Currently the size of the codebook is just 3 to facilitate
+visualization. The BIRTH algorithm is fast that it takes less than 30
+seconds for the 650k galaxies.
+
+Having this codebook, we use it to quantize the galaxies so that each
+galaxy is reduced to a categorical variable.
+
+** Spatial Clusters
+
+The spatial clusters are constructed as follows:
+*** Spatial model
+We assume that the universe the Euclidean, and convert the (RA, DEC,
+Z) coordinates into the Cartesian (X, Y, Z) coordinates.
+*** Neighbor search
+Assuming that the maximum distance between two interacting galaxies is
+10 MPC, and use this distance as our neighborhood size. We search for
+every pair of objects that are closer than 10 MPC, and record these
+pairs as the "edges" between galaxies. A KDTree is used accelerate the
+neigbor search. For further speed up we commit parallel queries, which
+have almost 0 overhead. With 8 processes the whole search process
+takes about 7 minutes.
+*** Cluster search
+Having the neighbors, we can constructed a undirected graph between
+galaxies. Then we find all the connected componnets in this graph, and
+treat each one as a spatial cluster. Note that this step has a linear
+complexity, and the resulting clusters do not have to be spherical. We
+filter these clusters by first drop those with less than 10 galaxies.
+We also drop those those larger than 50 galaxies because 1) 10 MPC is
+really large, and nearby galaxies are actually all connected 2) so
+that the clusters are comparable. Finally, we get about 5K galaxies
+clusters.
+
+** Histogram
+For each spatial spatial cluster, we look at its members' value from
+the quantization step, and accumulate these values into a histogram.
+For example, here for each spatial cluster we can get a histogram with
+3 bins. These histograms, normalized or not, are treated as the
+feature for the clusters.
+
+** Anomalous Cluster Detection
+
+Having the cluster features, we can apply any existing unsupervied
+anomaly detectors. Here we used two detectors:
+*** PCA detector
+In this detector, the reverse anomaly score depends how well a point
+can be reconstructed by the principle components of all the clusters.
+Concretely, we first train a PCA model from all the features of all
+the clusters, and then use the principle components to reconstruct
+each point, and finally define the anomaly score to be the
+reconstruction error.
+*** KNN detector
+In this detector, the anomaly score is defined as the distance from
+the test point to its K-th nearest neighbors. The intuition here is to
+detect low-density regions, and these procedure has some provable
+optimality. Here we choose K=3.
+
+After this filtering 651473 galaxies remain in the sample. MapReduce
+applied.
+
+** Quantization
+
+As the first step, a distributed PCA is applied to the galaxy spectra to
+reduce the dimensionality. 20 out of 500 principle components are
+retained in the reduced data so as to keep 99.5% of the total
+variance. MapReduce applied.
+
+Having this reduced features, a fast Kmeans variate BIRTH
+(http://www.cs.uvm.edu/~xwu/kdd/Birch-09.ppt) is applied to obtain a
+codebook. Currently the size of the codebook is just 3 to facilitate
+visualization. The BIRTH algorithm is fast that it takes less than 30
+seconds for the 650k galaxies.
+
+Having this codebook, we use it to quantize the galaxies so that each
+galaxy is reduced to a categorical variable.
+
+** Spatial Clusters
+
+** Histogram
+   
+** Anomalous Cluster Detection
+

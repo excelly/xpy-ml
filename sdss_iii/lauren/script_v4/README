@@ -1,0 +1,6 @@
+Put these two files in the same directory where you want the SDSS data to live
+
+Set up a cron job to run pcascript_test.csh every night at midnight (or something similar) with syntax (I think) like the following:
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+HOME=/.../path/to/pcascript_test.csh

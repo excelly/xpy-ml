@@ -1,0 +1,125 @@
+* Data
+
+Data are extracted from SDSS DR7. Only star objects are used. Objects
+are filtered according to their number of bad pixels, magnitude, Z
+status, and signal-to-noise ratio. A pool of 49529 objects are
+selected for the classification task.
+
+** Labels
+
+Labels of the stars are obtained from SIMBAD. SIMBAD labels 6454
+objects for for our pool. 
+
+There are 49 classes in total, but some of them have too few instances
+to train reliable classifiers. Therefore we drop the classes that have
+fewer than 5 instances, and treat these instances as unlabeled. The
+following 22 classes are dropped:
+
+'AGN' 'AM*' 'BLL' 'EmG' 'GlC' 'IG' 'NL*' 'No*' 'PN' 'PaG' 'Psr' 'SB*'
+'SBG' 'SN*' 'SNR' 'SR?' 'Sy*' 'Sy1' 'WU*' 'XB*' 'cm' 'dS*'
+
+And the remaining good classes are:
+
+'*' '*iC' '?' 'C*' 'CV*' 'Cl*' 'DN*' 'G' 'GiC' 'GiG' 'HB*' 'HII' 'IR'
+'LM*' 'LSB' 'PM*' 'PoG' 'Q?' 'QSO' 'RR*' 'Rad' 'UV' 'V*' 'WD*' 'X'
+'ZZ*' 'blu'
+
+The result is that we have 6415 labeled objects from 27 classes.
+
+Note that this means we can only predict an object to be in one of the
+27 training classes. The classifiers will not output the dropped
+classes, such as "PN".
+
+** Feature
+
+The features used for classification is a composition of spectrum and
+color.
+
+*** Spectrum Feature
+    
+The first part is the normalized spectrum. We first extract the
+spectrum features from SDSS and then condense them to a length-500
+vectors. Then we normalize each vector so that the sum of its elements
+is 500 the length.
+
+*** Color Feature
+
+The second part is the color. The length-5 feature vector contains the
+values of the fields "fiberMag_u/g/r/i/z". A feature vector are
+normalzied so that the sum of its elements is 5 the length.
+
+* Classifiers
+
+We use two classifiers here. 
+
+** Multinomial Logistic Regression
+
+Multinomial Logistic Regression is an extension of the binary Logistic
+Regression that handles multi-class problems. A brif description can
+be found at [[http://www.stat.psu.edu/~jiali/course/stat597e/notes2/logit.pdf][Multiclass Logistic Regression]]. The output of the logistic
+regression is the conditional probabilities of an object belonging to
+each class given its feature. To predict the label we just select the
+class with largest probability.
+
+This model is trained by LBFGS. Training is fast.
+
+** Multi-class SVM
+
+Multi-class SVM is also an extension of the binary SVM. The basic
+strategy is to train many 1 vs. 1 binary classifiers and then let them
+do majority vote. The [[http://www.csie.ntu.edu.tw/~cjlin/libsvm/][LibSVM]] implementation are used. And we use the
+linear kernel. The output of the SVM classifier is also the
+conditional probabilities of an object belonging to each class given
+its feature.
+
+The training process is slow because O(n^2) classifiers are needed.
+
+** Unbalance Problem
+
+One significant problem for the classification is that the class sizes
+are very unbalanced. For example, class WD* has 3589 instances which
+is 56% of the total. The problem is the classifier will concentrate
+its effort on the major classes while ignoring the minor classes,
+because they have little impact on the accuracy. 
+
+To solve this, one approach is to re-weight the objects and put more
+weight onto the objects in the minor classes so that they will not be
+ignored. To do a good re-weighting we need to know the true portion of
+each class in the whole population. But in fact we can only compute
+the portion in the labeled set, which is not uniformly sampled from
+the population. This is a problem that remains unsovled. Currently we
+just use the portion in the training set as a guess.
+
+** Performance
+
+The current performance, including training error and 10-fold
+cross-validation error, are reported as below.
+
+| Classifier                  | Training Error | CV Error |
+|-----------------------------+----------------+----------|
+| Multi-Logistic              |          80.6% |    77.7% |
+| Multi-Logistic - Reweighted |          81.0% |    74.7% |
+| Multi-SVM                   |          83.5% |    75.4% |
+| Multi-SVM - Reweighted      |          81.1% |    77.3% |
+
+* Website Update
+
+** Search Page
+
+In the third block of the [[http://www.autonlab.org/sdss][Search]] page, you can now select the feature
+and classifier for the classification task. Youc can also filter the
+objects according to their SIMBAD type and the predicted type given by
+the selected classifier.
+
+** Detail Page
+
+Each item in the [[http://www.autonlab.org/sdss/web_objects.php%3Fsubmit%3DSearch&custom_flag%3Dstar&det_feature%3DSpectrum&scorer%3Dpca_accum_err&label_filter%3Dall&sort_order%3Ddesc&cla_feature%3DSpectrumS1-Color&classifier%3Dmlr_uw&sbd_type%3D&pred_type%3D&page%3D1][Detail page]] now has a new field "Classification".
+This field has two parts, delimited by "|". The first part is the
+"object type; spec type; matched distance" from SIMBAD. The second
+part is the "predicted type; probability that the object has the
+predicted type " given by the classifier. 
+
+Note that the classifier part does not contain any training
+information. The prediction for a SIMBAD-labeled object is obtained
+from one fold of the cross-validation where this object is left out.
+So all the prediction results should be safe from over-fitting.
